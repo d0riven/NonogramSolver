@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type HintsGroup [][]int
+type Hints []int
 
 type RawInput struct {
 	Size struct {
@@ -16,30 +16,38 @@ type RawInput struct {
 		Height int
 	}
 	Hints struct {
-		HorizontalHintsGroups [][]int `yaml:"horizontal"`
-		VerticalHintsGroups   [][]int `yaml:"vertical"`
+		HorizontalHintGroups [][]int `yaml:"horizontal"`
+		VerticalHintGroups   [][]int `yaml:"vertical"`
 	}
 }
 
 type Input struct {
-	width        int
-	height       int
-	hHintsGroups HintsGroup
-	vHintsGroups HintsGroup
+	width       int
+	height      int
+	hHintsGroup []Hints
+	vHintsGroup []Hints
 }
 
 func NewInput(raw RawInput) (*Input, error) {
-	if err := validationHints(raw.Hints.HorizontalHintsGroups, raw.Size.Width, "horizontal"); err != nil {
+	if err := validationHints(raw.Hints.HorizontalHintGroups, raw.Size.Width, "horizontal"); err != nil {
 		return nil, err
 	}
-	if err := validationHints(raw.Hints.VerticalHintsGroups, raw.Size.Height, "vertical"); err != nil {
+	if err := validationHints(raw.Hints.VerticalHintGroups, raw.Size.Height, "vertical"); err != nil {
 		return nil, err
+	}
+	vHintGroups := make([]Hints, raw.Size.Height)
+	for _, rawGroup := range raw.Hints.VerticalHintGroups {
+		vHintGroups = append(vHintGroups, rawGroup)
+	}
+	hHintGroups := make([]Hints, raw.Size.Width)
+	for _, rawGroup := range raw.Hints.VerticalHintGroups {
+		hHintGroups = append(hHintGroups, rawGroup)
 	}
 	return &Input{
-		width:        raw.Size.Width,
-		height:       raw.Size.Height,
-		hHintsGroups: raw.Hints.HorizontalHintsGroups,
-		vHintsGroups: raw.Hints.VerticalHintsGroups,
+		width:       raw.Size.Width,
+		height:      raw.Size.Height,
+		hHintsGroup: hHintGroups,
+		vHintsGroup: vHintGroups,
 	}, nil
 }
 
