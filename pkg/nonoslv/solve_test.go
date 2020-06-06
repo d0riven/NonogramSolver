@@ -460,3 +460,94 @@ func Test_searchCombination(t *testing.T) {
 		}
 	})
 }
+
+func Test_searchFixedCell(t *testing.T) {
+	type args struct {
+		input *Input
+		stage *Stage
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Stage
+	}{
+		{
+			name: "",
+			args: args{
+				input: &Input{
+					width:  5,
+					height: 5,
+					hHintsGroup: []Hints{
+						{5},
+						{1},
+						{5},
+						{1},
+						{5},
+					},
+					vHintsGroup: []Hints{
+						{3, 1},
+						{1, 1, 1},
+						{1, 1, 1},
+						{1, 1, 1},
+						{1, 3},
+					},
+				},
+				stage: NewInitialStage(5, 5),
+			},
+			want: &Stage{
+				width:  5,
+				height: 5,
+				// ooooo
+				// oxxxx
+				// ooooo
+				// xxxxo
+				// ooooo
+				cells: [][]Cell{
+					{
+						{X: 0, Y: 0, State: Fill},
+						{X: 1, Y: 0, State: Fill},
+						{X: 2, Y: 0, State: Fill},
+						{X: 3, Y: 0, State: Fill},
+						{X: 4, Y: 0, State: Fill},
+					},
+					{
+						{X: 0, Y: 1, State: Fill},
+						{X: 1, Y: 1, State: Cross},
+						{X: 2, Y: 1, State: Cross},
+						{X: 3, Y: 1, State: Cross},
+						{X: 4, Y: 1, State: Cross},
+					},
+					{
+						{X: 0, Y: 2, State: Fill},
+						{X: 1, Y: 2, State: Fill},
+						{X: 2, Y: 2, State: Fill},
+						{X: 3, Y: 2, State: Fill},
+						{X: 4, Y: 2, State: Fill},
+					},
+					{
+						{X: 0, Y: 3, State: Cross},
+						{X: 1, Y: 3, State: Cross},
+						{X: 2, Y: 3, State: Cross},
+						{X: 3, Y: 3, State: Cross},
+						{X: 4, Y: 3, State: Fill},
+					},
+					{
+						{X: 0, Y: 4, State: Fill},
+						{X: 1, Y: 4, State: Fill},
+						{X: 2, Y: 4, State: Fill},
+						{X: 3, Y: 4, State: Fill},
+						{X: 4, Y: 4, State: Fill},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := searchFixedCell(tt.args.input, tt.args.stage)
+			if !assert.Equal(t, tt.want, got) {
+				got.Print()
+			}
+		})
+	}
+}
