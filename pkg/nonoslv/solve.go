@@ -255,9 +255,6 @@ func searchFixedCell(input *Input, stage *Stage) *Stage {
 }
 
 func searchCombination(hints Hints, line Line) Line {
-	if len(hints) == 0 {
-		return line
-	}
 	var initialState [][]CellState
 	cmb := search(0, 0, hints, line, initialState)
 	return mergeFinalStates(cmb)
@@ -266,6 +263,9 @@ func searchCombination(hints Hints, line Line) Line {
 func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]CellState {
 	if step >= len(hints) {
 		i := cur-1
+		if i < 0 {
+			i = 0 // hintsなしの場合の対応
+		}
 		// 最後まで行ったら末尾まで☓をつける
 		line, ok := line.CrossRange(i, len(line)-i)
 		if !ok {

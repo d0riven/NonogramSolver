@@ -18,7 +18,7 @@ func Test_searchCombination(t *testing.T) {
 			want Line
 		}{
 			{
-				name: "hints(None)=(-----)=>(-----)",
+				name: "hints(None)=(-----)=>(xxxxx)",
 				args: args{
 					hints: Hints{},
 					line: Line{
@@ -30,11 +30,11 @@ func Test_searchCombination(t *testing.T) {
 					},
 				},
 				want: Line{
-					Cell{State: None},
-					Cell{State: None},
-					Cell{State: None},
-					Cell{State: None},
-					Cell{State: None},
+					Cell{State: Cross},
+					Cell{State: Cross},
+					Cell{State: Cross},
+					Cell{State: Cross},
+					Cell{State: Cross},
 				},
 			},
 			{
