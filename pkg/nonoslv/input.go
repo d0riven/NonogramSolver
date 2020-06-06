@@ -35,12 +35,12 @@ func NewInput(raw RawInput) (*Input, error) {
 	if err := validationHints(raw.Hints.VerticalHintGroups, raw.Size.Height, "vertical"); err != nil {
 		return nil, err
 	}
-	vHintGroups := make([]Hints, raw.Size.Height)
+	var vHintGroups []Hints
 	for _, rawGroup := range raw.Hints.VerticalHintGroups {
 		vHintGroups = append(vHintGroups, rawGroup)
 	}
-	hHintGroups := make([]Hints, raw.Size.Width)
-	for _, rawGroup := range raw.Hints.VerticalHintGroups {
+	var hHintGroups []Hints
+	for _, rawGroup := range raw.Hints.HorizontalHintGroups {
 		hHintGroups = append(hHintGroups, rawGroup)
 	}
 	return &Input{

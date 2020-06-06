@@ -1,5 +1,7 @@
 package nonoslv
 
+import "fmt"
+
 // 渡されたファイルのヒントを元にノノグラムを解く
 // どのように解いたかはステップ毎に確認が出来る
 // - 可能であれば描画したい
@@ -31,14 +33,46 @@ func (s *Stage) GetCell(x int, y int) Cell {
 	return s.cells[y][x]
 }
 
+func (s *Stage) Diff(one *Stage) []Cell {
+	var cells []Cell
+	for y := 0; y < s.height; y++ {
+		for x := 0; x < s.width; x++ {
+			l := s.GetCell(x, y)
+			r := one.GetCell(x, y)
+			if l.State == r.State {
+				continue
+			}
+			cells = append(cells, r)
+		}
+	}
+	return cells
+}
+
+func (s *Stage) Print() {
+	for y := 0; y < s.height; y++ {
+		row := ""
+		for x := 0; x < s.width; x++ {
+			switch s.cells[y][x].State {
+			case None:
+				row += "-"
+			case Cross:
+				row += "x"
+			case Fill:
+				row += "o"
+			}
+		}
+		fmt.Println(row)
+	}
+}
+
 func NewInitialStage(width int, height int) *Stage {
 	cells := make([][]Cell, height)
 	for y := 0; y < height; y++ {
 		cells[y] = make([]Cell, width)
 		for x := 0; x < width; x++ {
 			cells[y][x] = Cell{
-				//X: x,
-				//Y: y,
+				X: x,
+				Y: y,
 				State: None,
 			}
 		}
@@ -69,8 +103,8 @@ const (
 )
 
 type Cell struct {
-	//X     int
-	//Y     int
+	X     int
+	Y     int
 	State CellState
 }
 
@@ -154,6 +188,13 @@ func (h *History) Add(stage Stage) {
 	h.stages = append(h.stages, stage)
 }
 
+func (h *History) Print() {
+	for step, stage := range h.stages {
+		fmt.Printf("step:%d\n", step)
+		stage.Print()
+	}
+}
+
 func Solve(input *Input) (*History, error) {
 	history := new(History)
 	initial := NewInitialStage(input.width, input.height)
@@ -162,11 +203,9 @@ func Solve(input *Input) (*History, error) {
 	next := initial
 	for {
 		cur := CopyStage(next)
-		next, err := searchFixedCell(input, cur)
-		if err != nil {
-			return nil, err
-		}
-		if next == nil {
+		next = searchFixedCell(input, cur)
+		diff := cur.Diff(next)
+		if len(diff) == 0 {
 			break
 		}
 		history.Add(*next)
@@ -174,15 +213,45 @@ func Solve(input *Input) (*History, error) {
 	return history, nil
 }
 
-func searchFixedCell(input *Input, stage *Stage) (*Stage, error) {
+func searchFixedCell(input *Input, stage *Stage) *Stage {
 	// vertical
+	var vLines []Line
 	for x := 0; x < stage.width; x++ {
-		hints := input.vHintsGroup[x]
-		line := stage.GetLineVertical(x)
-		searchCombination(hints, line)
+		line := searchCombination(input.vHintsGroup[x], stage.GetLineVertical(x))
+		vLines = append(vLines, line)
 	}
 	// horizontal
-	return nil, nil
+	var hLines []Line
+	for y := 0; y < stage.height; y++ {
+		line := searchCombination(input.hHintsGroup[y], stage.GetLineHorizontal(y))
+		hLines = append(hLines, line)
+	}
+
+	cells := make([][]Cell, stage.height)
+	for y := 0; y < stage.height; y++ {
+		cells[y] = make([]Cell, stage.width)
+		for x := 0; x < stage.width; x++ {
+			var state CellState
+			switch {
+			case vLines[x][y].State == Fill || hLines[y][x].State == Fill:
+				state = Fill
+			case vLines[x][y].State == Cross || hLines[y][x].State == Cross:
+				state = Cross
+			default:
+				state = None
+			}
+			cells[y][x] = Cell{
+				X: x,
+				Y: y,
+				State: state,
+			}
+		}
+	}
+	return &Stage{
+		width:  stage.width,
+		height: stage.height,
+		cells:  cells,
+	}
 }
 
 func searchCombination(hints Hints, line Line) Line {
