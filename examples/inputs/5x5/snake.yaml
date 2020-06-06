@@ -1,0 +1,39 @@
+# ooooo
+# oxxxx
+# ooooo
+# xxxxo
+# ooooo
+size:
+  width: 5
+  height: 5
+hints:
+  vertical:
+    -
+      - 3
+      - 1
+    -
+      - 1
+      - 1
+      - 1
+    -
+      - 1
+      - 1
+      - 1
+    -
+      - 1
+      - 1
+      - 1
+    -
+      - 1
+      - 3
+  horizontal:
+    -
+      - 5
+    -
+      - 1
+    -
+      - 5
+    -
+      - 1
+    -
+      - 5
