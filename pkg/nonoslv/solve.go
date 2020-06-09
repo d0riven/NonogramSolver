@@ -22,7 +22,7 @@ func (s *Stage) GetLineVertical(x int) Line {
 }
 
 func (s *Stage) GetLineHorizontal(y int) Line {
-	cells := make([]Cell, s.height)
+	cells := make([]Cell, s.width)
 	for x := 0; x < s.height; x++ {
 		cells[x] = s.GetCell(x, y)
 	}
@@ -201,29 +201,53 @@ func Solve(input *Input) (*History, error) {
 	history.Add(*initial)
 
 	next := initial
+	var tv []int
+	var th []int
+	for x := 0; x < initial.width; x++ {
+		tv = append(tv, x)
+	}
+	for y := 0; y < initial.height; y++ {
+		th = append(th, y)
+	}
+
 	for {
 		cur := CopyStage(next)
-		next = searchFixedCell(input, cur)
+		next = searchFixedCell(input, cur, tv, th)
 		diff := cur.Diff(next)
 		if len(diff) == 0 {
 			break
 		}
 		history.Add(*next)
+		tv, th = getChangedLine(diff)
 	}
 	return history, nil
 }
 
-func searchFixedCell(input *Input, stage *Stage) *Stage {
+func searchFixedCell(input *Input, stage *Stage, targetsV []int, targetsH []int) *Stage {
+	fv := make([]bool, stage.width)
+	fh := make([]bool, stage.height)
+	for _, x := range targetsV {
+		fv[x] = true
+	}
+	for _, y := range targetsH {
+		fh[y] = true
+	}
 	// vertical
 	var vLines []Line
 	for x := 0; x < stage.width; x++ {
-		line := searchCombination(input.vHintsGroup[x], stage.GetLineVertical(x))
+		line := stage.GetLineVertical(x)
+		if fv[x] {
+			line = searchCombination(input.vHintsGroup[x], line)
+		}
 		vLines = append(vLines, line)
 	}
 	// horizontal
 	var hLines []Line
 	for y := 0; y < stage.height; y++ {
-		line := searchCombination(input.hHintsGroup[y], stage.GetLineHorizontal(y))
+		line := stage.GetLineHorizontal(y)
+		if fh[y] {
+			line = searchCombination(input.hHintsGroup[y], line)
+		}
 		hLines = append(hLines, line)
 	}
 
@@ -237,7 +261,7 @@ func searchFixedCell(input *Input, stage *Stage) *Stage {
 				state = Fill
 			case vLines[x][y].State == Cross || hLines[y][x].State == Cross:
 				state = Cross
-			default:
+			default: // TODO: ここはありえないのでerrorを返すように
 				state = None
 			}
 			cells[y][x] = Cell{
@@ -257,7 +281,7 @@ func searchFixedCell(input *Input, stage *Stage) *Stage {
 func searchCombination(hints Hints, line Line) Line {
 	var initialState [][]CellState
 	cmb := search(0, 0, hints, line, initialState)
-	return mergeFinalStates(cmb)
+	return mergeFinalStates(cmb, line)
 }
 
 func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]CellState {
@@ -303,7 +327,10 @@ func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]Ce
 	return cmb
 }
 
-func mergeFinalStates(lineStates [][]CellState) Line {
+func mergeFinalStates(lineStates [][]CellState, fallbackLine Line) Line {
+	if len(lineStates) == 0 {
+		return fallbackLine
+	}
 	size := len(lineStates[0])
 	fillBits := make([]bool, size)
 	crossBits := make([]bool, size)
@@ -335,4 +362,22 @@ func mergeFinalStates(lineStates [][]CellState) Line {
 		}
 	}
 	return line
+}
+
+func getChangedLine(diff []Cell) ([]int, []int) {
+	fx := map[int]bool{}
+	fy := map[int]bool{}
+	var tv []int
+	var th []int
+	for _, cell := range diff {
+		if !fx[cell.X] {
+			fx[cell.X] = true
+			tv = append(tv, cell.X)
+		}
+		if !fy[cell.Y] {
+			fy[cell.Y] = true
+			th = append(th, cell.Y)
+		}
+	}
+	return tv, th
 }

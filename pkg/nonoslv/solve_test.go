@@ -465,6 +465,8 @@ func Test_searchFixedCell(t *testing.T) {
 	type args struct {
 		input *Input
 		stage *Stage
+		targetV []int
+		targetH []int
 	}
 	tests := []struct {
 		name string
@@ -492,7 +494,9 @@ func Test_searchFixedCell(t *testing.T) {
 						{1, 3},
 					},
 				},
-				stage: NewInitialStage(5, 5),
+				stage:   NewInitialStage(5, 5),
+				targetV: []int{0,1,2,3,4},
+				targetH: []int{0,1,2,3,4},
 			},
 			want: &Stage{
 				width:  5,
@@ -544,7 +548,7 @@ func Test_searchFixedCell(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := searchFixedCell(tt.args.input, tt.args.stage)
+			got := searchFixedCell(tt.args.input, tt.args.stage, tt.args.targetV, tt.args.targetH)
 			if !assert.Equal(t, tt.want, got) {
 				got.Print()
 			}
