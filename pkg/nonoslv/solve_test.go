@@ -280,7 +280,11 @@ func Test_searchCombination(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got := searchCombination(tt.args.hints, tt.args.line)
+				memo := make([][]bool, len(tt.args.hints))
+				for step, _ := range tt.args.hints {
+					memo[step] = make([]bool, len(tt.args.line))
+				}
+				got := searchCombination(tt.args.hints, tt.args.line, memo)
 				assert.Equal(t, tt.want, got)
 			})
 		}
@@ -454,7 +458,11 @@ func Test_searchCombination(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				got := searchCombination(tt.args.hints, tt.args.line)
+				memo := make([][]bool, len(tt.args.hints))
+				for step, _ := range tt.args.hints {
+					memo[step] = make([]bool, len(tt.args.line))
+				}
+				got := searchCombination(tt.args.hints, tt.args.line, memo)
 				assert.Equal(t, tt.want, got)
 			})
 		}
@@ -548,6 +556,7 @@ func Test_searchFixedCell(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			initMemo(tt.args.input)
 			got := searchFixedCell(tt.args.input, tt.args.stage, tt.args.targetV, tt.args.targetH)
 			if !assert.Equal(t, tt.want, got) {
 				got.Print()

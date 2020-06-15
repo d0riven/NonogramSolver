@@ -1,6 +1,8 @@
 package nonoslv
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // 渡されたファイルのヒントを元にノノグラムを解く
 // どのように解いたかはステップ毎に確認が出来る
@@ -195,12 +197,15 @@ func (h *History) Print() {
 	}
 }
 
+// TODO: globalに入れるとテストし辛くなるのでどうしたものか
+var vMemos [][][]bool
+var hMemos [][][]bool
 func Solve(input *Input) (*History, error) {
 	history := new(History)
 	initial := NewInitialStage(input.width, input.height)
 	history.Add(*initial)
 
-	next := initial
+	// 初期化
 	var tv []int
 	var th []int
 	for x := 0; x < initial.width; x++ {
@@ -209,7 +214,9 @@ func Solve(input *Input) (*History, error) {
 	for y := 0; y < initial.height; y++ {
 		th = append(th, y)
 	}
+	initMemo(input)
 
+	next := initial
 	for {
 		cur := CopyStage(next)
 		next = searchFixedCell(input, cur, tv, th)
@@ -221,6 +228,23 @@ func Solve(input *Input) (*History, error) {
 		tv, th = getChangedLine(diff)
 	}
 	return history, nil
+}
+
+func initMemo(input *Input) {
+	vMemos = make([][][]bool, input.width)
+	for x := 0; x < input.width; x++ {
+		vMemos[x] = make([][]bool, len(input.vHintsGroup[x]))
+		for s, _ := range input.vHintsGroup[x] {
+			vMemos[x][s] = make([]bool, input.height)
+		}
+	}
+	hMemos = make([][][]bool, input.height)
+	for y := 0; y < input.height; y++ {
+		hMemos[y] = make([][]bool, len(input.hHintsGroup[y]))
+		for s, _ := range input.hHintsGroup[y] {
+			hMemos[y][s] = make([]bool, input.width)
+		}
+	}
 }
 
 func searchFixedCell(input *Input, stage *Stage, targetsV []int, targetsH []int) *Stage {
@@ -237,7 +261,7 @@ func searchFixedCell(input *Input, stage *Stage, targetsV []int, targetsH []int)
 	for x := 0; x < stage.width; x++ {
 		line := stage.GetLineVertical(x)
 		if fv[x] {
-			line = searchCombination(input.vHintsGroup[x], line)
+			line = searchCombination(input.vHintsGroup[x], line, vMemos[x])
 		}
 		vLines = append(vLines, line)
 	}
@@ -246,7 +270,7 @@ func searchFixedCell(input *Input, stage *Stage, targetsV []int, targetsH []int)
 	for y := 0; y < stage.height; y++ {
 		line := stage.GetLineHorizontal(y)
 		if fh[y] {
-			line = searchCombination(input.hHintsGroup[y], line)
+			line = searchCombination(input.hHintsGroup[y], line, vMemos[y])
 		}
 		hLines = append(hLines, line)
 	}
@@ -278,13 +302,13 @@ func searchFixedCell(input *Input, stage *Stage, targetsV []int, targetsH []int)
 	}
 }
 
-func searchCombination(hints Hints, line Line) Line {
+func searchCombination(hints Hints, line Line, memo [][]bool) Line {
 	var initialState [][]CellState
-	cmb := search(0, 0, hints, line, initialState)
+	cmb := search(0, 0, hints, line, initialState, memo)
 	return mergeFinalStates(cmb, line)
 }
 
-func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]CellState {
+func search(step int, cur int, hints Hints, line Line, cmb [][]CellState, memo [][]bool) [][]CellState {
 	if step >= len(hints) {
 		i := cur-1
 		if i < 0 {
@@ -294,6 +318,7 @@ func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]Ce
 		line, ok := line.CrossRange(i, len(line)-i)
 		if !ok {
 			// ただし、すでに塗りつぶされていれば何もしない
+			memo[step][i] = true
 			return cmb
 		}
 		return append(cmb, line.GetStates())
@@ -301,8 +326,13 @@ func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]Ce
 
 	hint := hints[step]
 	for i := cur; i < len(line); i++ {
+		// すでに到達不能と分かっているなら何もしない
+		if len(hints) > step && len(line) > i  && memo[step][i] {
+			continue
+		}
 		// ヒントの数よりもマスの上限を超えた場合は何もしない
 		if i+hint > len(line) {
+			memo[step][i] = true
 			return cmb
 		}
 
@@ -310,19 +340,22 @@ func search(step int, cur int, hints Hints, line Line, cmb [][]CellState) [][]Ce
 		// 確定マスがあって塗りつぶせないなら次のマスを試す
 		l, ok := l.CrossRange(cur, i - cur)
 		if !ok {
+			memo[step][i] = true
 			continue
 		}
 		l, ok = l.FillRange(i, hint)
 		if !ok {
+			memo[step][i] = true
 			continue
 		}
 		if i+hint < len(l) {
 			l, ok = l.CrossRange(i+hint, 1)
 			if !ok {
+				memo[step][i] = true
 				continue
 			}
 		}
-		cmb = search(step+1, i+hint+1, hints, l, cmb)
+		cmb = search(step+1, i+hint+1, hints, l, cmb, memo)
 	}
 	return cmb
 }
